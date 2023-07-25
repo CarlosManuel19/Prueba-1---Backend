@@ -1,4 +1,3 @@
-# Permitir que la funcion evaluate(m) evalua una celda como =A1, tome el valor de esa celda y se la asigne a la celda actual
 import re
 
 
