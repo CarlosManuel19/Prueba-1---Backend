@@ -1,7 +1,5 @@
 import re
-import numbers
 
-fila,columna = None,None
 
 def separar_elementos(cadena):
     # Separar la cadena por los operadores (+, -, *, /)
@@ -61,36 +59,50 @@ def obtener_indices(cadena):
     return (fila, columna)
 
 
+# Modificar la función evaluate para que lance una excepción
 def evaluate(m):
-    # Recorremos la matriz por filas y columnas
-    for i in range(len(m)):
-        for j in range(len(m[i])):
-            # Accedemos a la celda actual
-            celda = m[i][j] 
-            # Comprobamos si la celda es una cadena de texto
-            if isinstance(celda, str):
-                # Comprobamos si la celda contiene una función
-                if celda.strip().startswith("="):
-                    # Llamamos a la función evaluate_cell para obtener el valor de la celda
-                    resultado = evaluate_cell(m, i, j)
-                    # Asignamos el resultado a la celda actual de la matriz m
-                    m[i][j] = resultado
+    
+        # Recorremos la matriz por filas y columnas
+        for i in range(len(m)):
+            for j in range(len(m[i])):
+                # Accedemos a la celda actual
+                celda = m[i][j] 
+              
+                # Comprobamos si la celda es una cadena vacía o un valor None
+                if celda == "" or celda is None:
+                    # Lanzamos una excepción personalizada
+                    raise ValueError("La celda {} no puede estar vacía o ser None".format(chr(j + ord('A')) + str(i + 1)))
+                # Comprobamos si la celda es una cadena de texto
+                if isinstance(celda, str):
+                    # Comprobamos si la celda contiene una función
+                    if celda.strip().startswith("="):
+                        # Llamamos a la función evaluate_cell para obtener el valor de la celda
+                        resultado = evaluate_cell(m, i, j)
+                        # Asignamos el resultado a la celda actual de la matriz m
+                        m[i][j] = resultado
 
-                elif celda.isnumeric(): # Comprobamos si la celda contiene solo números
-                    numero = float(celda) # Convertimos la cadena a un número de tipo float
-                    m[i][j] = numero # Asignamos el número a la celda actual
+                    elif celda.isnumeric(): # Comprobamos si la celda contiene solo números
+                            numero = float(celda) # Convertimos la cadena a un número de tipo float
+                            m[i][j] = numero # Asignamos el número a la celda actual
 
-    return m
+                    else: # Si la celda no es ni una función ni un número, lanzamos una excepción
+                        raise ValueError("La celda {} no puede ser una cadena de texto que no sea una fórmula".format(chr(j + ord('A')) + str(i + 1)))
+
+        return m
 
 
 def evaluate_cell(m, i, j):
     # Esta función evalúa recursivamente el valor de una celda que contiene una fórmula
-
+    
     # Accedemos a la celda actual
     celda = m[i][j] 
-    valor1,valor2 = None, None
-    operando1,operando2,operador=None,None,None
 
+    # Comprobamos si la celda es una cadena vacía o un valor None
+    if celda == "" or celda is None:
+        # Lanzamos una excepción personalizada
+        raise ValueError("La celda {} no puede estar vacía o ser None".format(chr(j + ord('A')) + str(i + 1)))
+    
+    operando1,operando2,operador=None,None,None  
     # Comprobamos si la celda es una cadena de texto
     if isinstance(celda, str):
         # Comprobamos si la celda contiene una función
@@ -99,6 +111,11 @@ def evaluate_cell(m, i, j):
             celda = celda.replace(" ", "").upper()
             # Separamos los operandos y el operador de la función                
             elementos = separar_elementos(celda)
+            
+            if len(elementos) == 1 and elementos[0] in ["+", "-", "*", "/"]:
+                # Hay solo un signo, lanzar una excepción personalizada
+                raise ValueError("La función {} no es válida".format(celda))
+
             if len(elementos) == 2:
                 # Solo hay un valor, devolverlo como una lista de un elemento
                 operando1 = elementos
@@ -110,79 +127,78 @@ def evaluate_cell(m, i, j):
             else:
                 # Hay más o menos valores de los esperados, lanzar una excepción personalizada
                 raise ValueError("La función {} no es válida".format(celda))
-
             # Comprobamos si el primer operando es una referencia a otra celda
             if  operando1[0].isalpha():
                 fila,columna = obtener_indices(operando1)
-                # Verificamos la condición fila == i and columna == j
-                if fila == i and columna == j: 
-                    raise ValueError("Referencia circular detectada en la celda {}: {}".format(chr(j + ord('A')) + str(i + 1), celda))
                 
-                # Verificamos si la referencia está dentro del rango de la matriz
-                if fila < 0 or fila >= len(m) or columna < 0 or columna >= len(m[0]):
-                    raise ReferenceError("Referencia fuera de rango en la celda {}: {}".format(chr(j + ord('A')) + str(i + 1), celda))
-
-                # Obtenemos el valor de la referencia usando la función recursiva
-                valor1 = evaluate_cell(m, fila, columna)
+            
+               
+                
+                # Comprobamos si los índices de la referencia están dentro de los límites de la matriz
+                if fila >= 0 and fila < len(m) and columna >= 0 and columna < len(m[0]): # Si los índices son válidos
+                    # Obtenemos el valor de la referencia usando la función recursiva
+                    valor1 = evaluate_cell(m, fila, columna)
+                else: # Si los índices no son válidos
+                    raise ReferenceError(f"Invalid cell reference: {operando1}") # Lanzamos una excepción con el mensaje apropiado
+            
             else:
                 # Si el primer operando es un número, lo convertimos a flotante
                 valor1 = float(operando1)
-
             # Comprobamos si hay un segundo operando
             if operando2 is not None:
                 # Comprobamos si el segundo operando es una referencia a otra celda
                 if operando2[0].isalpha():
-                    # Verificamos la condición fila == i and columna == j
                     fila,columna = obtener_indices(operando2)
-                    if fila == i and columna == j: 
-                        raise ValueError("Referencia circular detectada en la celda {}: {}".format(chr(j + ord('A')) + str(i + 1), celda))
+                
                     
-                    # Verificamos si la referencia está dentro del rango de la matriz
-                    if fila < 0 or fila >= len(m) or columna < 0 or columna >= len(m[0]):
-                        raise ReferenceError("Referencia fuera de rango en la celda {}: {}".format(chr(j + ord('A')) + str(i + 1), celda))
-
-                    valor2 = evaluate_cell(m, fila, columna)
+                    
+                    # Comprobamos si los índices de la referencia están dentro de los límites de la matriz
+                    if fila >= 0 and fila < len(m) and columna >= 0 and columna < len(m[0]): # Si los índices son válidos
+                        # Obtenemos el valor de la referencia usando la función recursiva
+                        valor2 = evaluate_cell(m, fila, columna)
+                    else: # Si los índices no son válidos
+                        raise ReferenceError(f"Invalid cell reference: {operando2}") # Lanzamos una excepción con el mensaje apropiado
                 else:
                     # Si el segundo operando es un número, lo convertimos a flotante
                     valor2 = float(operando2)
-                    
-                
-                # Definimos un diccionario con las funciones aritméticas
-                if operador == '+':
-                    resultado = valor1 + float(valor2)
-                elif operador == '-':
+            # Comprobamos si hay un operador
+            if operador is not None:
+                # Evaluamos la operación según el operador
+                if operador == "+":
+                    resultado = valor1 + valor2
+                elif operador == "-":
                     resultado = valor1 - valor2
-                elif operador == '*':
+                elif operador == "*":
                     resultado = valor1 * valor2
-                elif operador == '/':
-                    # Verificamos la división entre cero
+                elif operador == "/":
+                    # Comprobamos si el divisor es cero
                     if valor2 == 0:
-                        raise ValueError("División entre cero en la celda {}: {}".format(chr(j + ord('A')) + str(i + 1), celda))
-                    resultado = valor1 / valor2
+                        # Lanzamos una excepción personalizada
+                        raise ZeroDivisionError("No se puede dividir por cero en la celda {}: {}".format(chr(j + ord('A')) + str(i + 1), celda))
+                    else:
+                        resultado = valor1 / valor2
                 else:
-                    raise ValueError("Operador no válido.")
+                    # El operador no es válido, lanzar una excepción personalizada
+                    raise ValueError("El operador {} no es válido en la celda {}: {}".format(operador, chr(j + ord('A')) + str(i + 1), celda))
             else:
-                # Si no hay un segundo operando, el resultado es el valor del primer operando
+                # No hay operador, el resultado es el primer operando
                 resultado = valor1
-        
-            # Devolvemos el resultado de la celda actual
+            
             return resultado
 
         elif celda.isnumeric(): # Comprobamos si la celda contiene solo números
             numero = float(celda) # Convertimos la cadena a un número de tipo float
             return numero # Devolvemos el número
 
+        else: # Si la celda no es ni una función ni un número, lanzamos una excepción
+            raise ValueError("La celda {} no puede ser una cadena de texto que no sea una fórmula".format(chr(j + ord('A')) + str(i + 1)))
     else:
         # Si la celda no es una cadena de texto, devolvemos su valor tal cual
         return celda
 
 
 
-# =============================================================================
-#
-# Some example inputs and solutions to test against
-#
-# =============================================================================
+
 
 testcase = []
 solution = []
@@ -287,7 +303,7 @@ testcase.append([ [ 1, "=A1+5+6+7" ] ])
 solution.append(ValueError)
 
 testcase.append([ [ 1, "=A1 $ A1" ] ])
-solution.append(ValueError)
+solution.append(ValueError) 
 
 # Case: division by zero
 testcase.append([ [ 1, "=A1 - 1", "=A1 / B1" ] ])
@@ -327,7 +343,6 @@ solution.append(ValueError)
 
 testcase.append([ [ "A1" ] ])
 solution.append(ValueError)
-
 
 
 
