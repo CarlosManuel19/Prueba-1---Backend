@@ -68,7 +68,7 @@ except ValueError as e:
     
 # Función evaluate_cell
 
-## Esta función recibe una matriz que representa una hoja de cálculo, y los índices de fila y columna de una celda que contiene una fórmula. Una fórmula es una cadena que empieza por “=” y contiene una operación aritmética simple (suma, resta, multiplicación o división) entre dos valores numéricos o dos referencias de celda (por ejemplo, “=A1+B2”). La función evalúa recursivamente el valor de la fórmula y lo devuelve como un número.
+Esta función recibe una matriz que representa una hoja de cálculo, y los índices de fila y columna de una celda que contiene una fórmula. Una fórmula es una cadena que empieza por “=” y contiene una operación aritmética simple (suma, resta, multiplicación o división) entre dos valores numéricos o dos referencias de celda (por ejemplo, “=A1+B2”). La función evalúa recursivamente el valor de la fórmula y lo devuelve como un número.
 
 ### Ejemplos
 >>> m = [["", 3, 5], ["=A1+B1", "=B1*C1", 7], [9, "=B2+C2", "=A3*B3"]]
