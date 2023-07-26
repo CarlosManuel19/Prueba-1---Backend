@@ -1,3 +1,6 @@
+""" @autor Carlos Solís 
+@fecha 07/25/2023
+@version 1.0 """
 import re
 
 
