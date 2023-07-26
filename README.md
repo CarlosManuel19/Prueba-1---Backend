@@ -54,14 +54,17 @@ La función puede lanzar una excepción ValueError si alguna de las celdas tiene
 
 >>> m = [["", None, "hola"], [3, 4, 5], [6, 7, 8]]
 >>> evaluate(m)
-ValueError: La celda A1 no puede estar vacía o ser None
-ValueError: La celda B1 no puede estar vacía o ser None
-ValueError: La celda C1 no puede ser una cadena de texto que no sea una fórmula
+#### ValueError: La celda A1 no puede estar vacía o ser None
+#### ValueError: La celda B1 no puede estar vacía o ser None
+#### ValueError: La celda C1 no puede ser una cadena de texto que no sea una fórmula
 
-Para manejar estas excepciones, se puede usar un bloque try-except y mostrar un mensaje de error adecuado. Por ejemplo:
+### Para manejar estas excepciones, se puede usar un bloque try-except y mostrar un mensaje de error adecuado. Por ejemplo:
 
 try:
     resultado = evaluate(m)
     print(resultado)
 except ValueError as e:
     print(e)
+
+
+
