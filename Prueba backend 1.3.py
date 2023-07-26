@@ -2,6 +2,7 @@ import re
 from validate import validate
 
 fila,columna= None,None
+operando1,operando2, operador = None,None,None
 
 def separar_elementos(cadena):
     # Separar la cadena por los operadores (+, -, *, /)
@@ -44,10 +45,6 @@ def separar_elementos(cadena):
         raise ValueError("La función {} no es válida".format(cadena))
 
 
-
-
-
-
 # Definimos una función auxiliar para obtener los índices de fila y columna de una referencia de celda
 def obtener_indices(cadena):
     # Convertir la cadena a mayúsculas
@@ -61,6 +58,38 @@ def obtener_indices(cadena):
     # Devolver los índices de fila y columna como una tupla
     return (fila, columna)
 
+# Definimos una función recursiva para obtener el valor de una referencia
+def obtener_valor(referencia, m):
+    # Obtenemos el índice de fila y el índice de columna de la referencia
+    fila, columna = obtener_indices(referencia)
+    # Accedemos al valor correspondiente en la matriz m
+    valor = m[fila][columna]
+    # Si el valor es una referencia a otra celda, llamamos a la función recursivamente con el nuevo valor
+    if isinstance(valor, str) and valor[0].isalpha():
+        elementos = separar_elementos(valor)
+        valor = obtener_valor(valor, m)
+    # Si el valor es un número, lo convertimos a flotante
+    elif isinstance(valor, str) and valor[0].isdigit():
+        valor = float(valor)
+    # Devolvemos el valor final
+    return valor
+
+
+def asignar_elementos(elementos,celda):
+    if len(elementos) == 2:
+        # Solo hay un valor, devolverlo como una lista de un elemento
+        operando1 = elementos
+        return operando1
+    elif len(elementos) == 3:
+        operando1 = elementos[0]
+        operando2 = elementos[2]
+        operador = elementos[1]
+        return operando1,operando2,operador
+    else:
+        # Hay más o menos valores de los esperados, lanzar una excepción personalizada
+        raise ValueError("La función {} no es válida".format(celda))
+ 
+
 def evaluate(m):
     # Recorremos la matriz por filas y columnas
     for i in range(len(m)):
@@ -70,35 +99,20 @@ def evaluate(m):
             # Comprobamos si la celda contiene una función
         
             if isinstance(celda, str) and celda.strip().startswith("="):
-
-                operando1,operando2,operador = None, None, None
                 # Eliminamos los espacios dentro de la celda y la convertimos a mayúsculas
                 celda = celda.replace(" ", "").upper()
                 # Separamos los operandos y el operador de la función                
                 elementos = separar_elementos(celda)
-                if len(elementos) == 2:
-                    # Solo hay un valor, devolverlo como una lista de un elemento
-                    operando1 = elementos
-                elif len(elementos) == 3:
-                    operando1 = elementos[0]
-                    operando2 = elementos[2]
-                    operador = elementos[1]
-                else:
-                    # Hay más o menos valores de los esperados, lanzar una excepción personalizada
-                    raise ValueError("La función {} no es válida".format(celda))
-               
-            
+                operando1,operando2,operador = asignar_elementos(elementos,celda)
+
                 # Comprobamos si el primer operando es una referencia a otra celda
                 if  operando1[0].isalpha():
-                    # Obtenemos el índice de fila y el índice de columna de la referencia
-                    fila, columna = obtener_indices(operando1)
-                    
                     # Verificamos la condición fila == i and columna == j
                     if fila == i and columna == j: 
                         raise ValueError("Referencia circular detectada en la celda {}: {}".format(chr(j + ord('A')) + str(i + 1), celda))
                     
-                    # Accedemos al valor correspondiente en la matriz m
-                    valor1 = m[fila][columna]
+                    # Obtenemos el valor de la referencia usando la función recursiva
+                    valor1 = obtener_valor(operando1, m)
                 else:
                     # Si el primer operando es un número, lo convertimos a flotante
                     valor1 = float(operando1)
@@ -107,15 +121,12 @@ def evaluate(m):
                 if operando2 is not None:
                     # Comprobamos si el segundo operando es una referencia a otra celda
                     if operando2[0].isalpha():
-                        # Obtenemos el índice de fila y el índice de columna de la referencia
-                        fila, columna = obtener_indices(operando2)
-                        
                         # Verificamos la condición fila == i and columna == j
                         if fila == i and columna == j: 
                             raise ValueError("Referencia circular detectada en la celda {}: {}".format(chr(j + ord('A')) + str(i + 1), celda))
                     
-                        # Accedemos al valor correspondiente en la matriz m
-                        valor2 = m[fila][columna]
+                        # Obtenemos el valor de la referencia usando la función recursiva
+                        valor2 = obtener_valor(operando2, m)
                     else:
                         # Si el segundo operando es un número, lo convertimos a flotante
                         valor2 = float(operando2)
@@ -144,7 +155,6 @@ def evaluate(m):
     return m
 
 
-
 # Definimos una lista vacía para guardar los casos de prueba
 testcase = []
 
@@ -152,8 +162,20 @@ testcase = []
 solution = []
 
 # Añadimos el caso de prueba con números negativos
-testcase.append([ [ 1, "=A1* -1" ] ])
-solution.append([ [ 1, -1 ] ])
+testcase.append(
+    [
+        [ "=C1+5", "=A3/2", "=c2-1" ],
+        [ "=b3+7",       1, "=B1*4" ],
+        [ "=B2+5", "=a1/5", "=A2-2" ]
+    ]
+)
+solution.append(
+    [
+        [ 16,   3,   11   ],
+        [ 10.2, 1,   12   ],
+        [  6,   3.2,  8.2 ]
+    ]
+)
 
 # Recorremos los casos de prueba y las soluciones
 for i in range(len(testcase)):
