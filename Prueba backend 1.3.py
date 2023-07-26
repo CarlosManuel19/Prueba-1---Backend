@@ -9,11 +9,22 @@ def separar_elementos(cadena):
     separador = "(\+|-|\*|/)"
     cadena = cadena.replace("=", "")
     elementos = re.split(separador, cadena)
+    #Es para eliminar los elementos vacíos de la lista elementos
     elementos = list(filter(bool, elementos))
     # Comprobar el número de elementos en la lista
     if len(elementos) == 1:
-        # Solo hay un valor, devolverlo como una lista de un elemento
+        # Solo hay un valor
         return cadena
+    elif len(elementos) == 2:
+        # Hay dos elementos, puede ser que el primero sea un signo
+        if elementos[0] in ["+", "-"]:
+            # Concatenamos el signo con el operando
+            elementos[0] = elementos[0] + elementos[1]
+            # Eliminamos el segundo elemento de la lista
+            elementos.pop()
+            return list(elementos)
+        else:
+            raise ValueError("La función {} no es válida".format(cadena))
     elif len(elementos) == 3:
         return list(elementos)
     elif len(elementos) == 4 :
@@ -29,14 +40,6 @@ def separar_elementos(cadena):
             elementos[2] = elementos[2] + elementos[3]
             # Eliminamos el cuarto elemento de la lista
             elementos.pop()
-            return list(elementos)
-        elif re.match("[A-Z]+\d+", elementos[0]):
-            # El primer elemento es una referencia a una celda
-            fila, columna = obtener_indices(elementos[0])
-            return list(elementos)
-        elif re.match("[A-Z]+\d+", elementos[2]):
-            # El tercer elemento es una referencia a una celda
-            fila, columna = obtener_indices(elementos[2])
             return list(elementos)
         else:
            raise ValueError("La función {} no es válida".format(cadena))
@@ -66,7 +69,6 @@ def obtener_valor(referencia, m):
     valor = m[fila][columna]
     # Si el valor es una referencia a otra celda, llamamos a la función recursivamente con el nuevo valor
     if isinstance(valor, str) and valor[0].isalpha():
-        elementos = separar_elementos(valor)
         valor = obtener_valor(valor, m)
     # Si el valor es un número, lo convertimos a flotante
     elif isinstance(valor, str) and valor[0].isdigit():
@@ -74,21 +76,7 @@ def obtener_valor(referencia, m):
     # Devolvemos el valor final
     return valor
 
-
-def asignar_elementos(elementos,celda):
-    if len(elementos) == 2:
-        # Solo hay un valor, devolverlo como una lista de un elemento
-        operando1 = elementos
-        return operando1
-    elif len(elementos) == 3:
-        operando1 = elementos[0]
-        operando2 = elementos[2]
-        operador = elementos[1]
-        return operando1,operando2,operador
-    else:
-        # Hay más o menos valores de los esperados, lanzar una excepción personalizada
-        raise ValueError("La función {} no es válida".format(celda))
- 
+    
 
 def evaluate(m):
     # Recorremos la matriz por filas y columnas
@@ -103,7 +91,17 @@ def evaluate(m):
                 celda = celda.replace(" ", "").upper()
                 # Separamos los operandos y el operador de la función                
                 elementos = separar_elementos(celda)
-                operando1,operando2,operador = asignar_elementos(elementos,celda)
+                if len(elementos) == 2:
+                    # Solo hay un valor, devolverlo como una lista de un elemento
+                    operando1 = elementos
+                    operando2 = None
+                elif len(elementos) == 3:
+                    operando1 = elementos[0]
+                    operando2 = elementos[2]
+                    operador = elementos[1]
+                else:
+                    # Hay más o menos valores de los esperados, lanzar una excepción personalizada
+                    raise ValueError("La función {} no es válida".format(celda))
 
                 # Comprobamos si el primer operando es una referencia a otra celda
                 if  operando1[0].isalpha():
@@ -162,18 +160,17 @@ testcase = []
 solution = []
 
 # Añadimos el caso de prueba con números negativos
+# Case: formulas referencing two cells
 testcase.append(
     [
-        [ "=C1+5", "=A3/2", "=c2-1" ],
-        [ "=b3+7",       1, "=B1*4" ],
-        [ "=B2+5", "=a1/5", "=A2-2" ]
+        [1,     "=A1+1", "=A1 + B1"],
+        ["=B1", "3",     "=C1 + B2"]
     ]
 )
 solution.append(
     [
-        [ 16,   3,   11   ],
-        [ 10.2, 1,   12   ],
-        [  6,   3.2,  8.2 ]
+        [1, 2, 3],
+        [2, 3, 6]
     ]
 )
 
