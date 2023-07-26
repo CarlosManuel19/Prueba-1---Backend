@@ -1,20 +1,50 @@
 import re
+from validate import validate
 
+fila,columna= None,None
 
 def separar_elementos(cadena):
     # Separar la cadena por los operadores (+, -, *, /)
     separador = "(\+|-|\*|/)"
     cadena = cadena.replace("=", "")
     elementos = re.split(separador, cadena)
+    elementos = list(filter(bool, elementos))
     # Comprobar el número de elementos en la lista
     if len(elementos) == 1:
         # Solo hay un valor, devolverlo como una lista de un elemento
         return cadena
     elif len(elementos) == 3:
         return list(elementos)
+    elif len(elementos) == 4 :
+        # Hay cuatro elementos, puede ser que el primero o el tercero sean un signo
+        if elementos[0] in ["+", "-"]:
+            # Concatenamos el signo con el primer operando
+            elementos[0] = elementos[0] + elementos[1]
+            # Eliminamos el segundo elemento de la lista
+            elementos.pop(1)
+            return list(elementos)
+        elif elementos[2] in ["+", "-"]:
+            # Concatenamos el signo con el segundo operando
+            elementos[2] = elementos[2] + elementos[3]
+            # Eliminamos el cuarto elemento de la lista
+            elementos.pop()
+            return list(elementos)
+        elif re.match("[A-Z]+\d+", elementos[0]):
+            # El primer elemento es una referencia a una celda
+            fila, columna = obtener_indices(elementos[0])
+            return list(elementos)
+        elif re.match("[A-Z]+\d+", elementos[2]):
+            # El tercer elemento es una referencia a una celda
+            fila, columna = obtener_indices(elementos[2])
+            return list(elementos)
+        else:
+           raise ValueError("La función {} no es válida".format(cadena))
     else:
         # Hay más o menos valores de los esperados, lanzar una excepción personalizada
         raise ValueError("La función {} no es válida".format(cadena))
+
+
+
 
 
 
@@ -30,7 +60,6 @@ def obtener_indices(cadena):
     fila = int(numero) - 1
     # Devolver los índices de fila y columna como una tupla
     return (fila, columna)
-
 
 def evaluate(m):
     # Recorremos la matriz por filas y columnas
@@ -60,7 +89,7 @@ def evaluate(m):
                
             
                 # Comprobamos si el primer operando es una referencia a otra celda
-                if not operando1.isnumeric():
+                if  operando1[0].isalpha():
                     # Obtenemos el índice de fila y el índice de columna de la referencia
                     fila, columna = obtener_indices(operando1)
                     
@@ -77,7 +106,7 @@ def evaluate(m):
                 # Comprobamos si hay un segundo operando
                 if operando2 is not None:
                     # Comprobamos si el segundo operando es una referencia a otra celda
-                    if not operando2.isnumeric():
+                    if operando2[0].isalpha():
                         # Obtenemos el índice de fila y el índice de columna de la referencia
                         fila, columna = obtener_indices(operando2)
                         
@@ -109,24 +138,37 @@ def evaluate(m):
                     # Si no hay un segundo operando, el resultado es el valor del primer operando
                     resultado = valor1
 
-                # Asignamos el resultado a la celda actual
+                # Asignamos el resultado a la celda actual de la matriz m
                 m[i][j] = resultado
-    # Devolvemos la matriz actualizada
+
     return m
 
 
-# Supongamos que tenemos una matriz como esta:
-m =  [
-    [1, " =A1"],
-    ["=B1+1", "=A2+1"]
-    ]
 
-# Llamamos a la función con la matriz m como argumento
-m_actualizada = evaluate(m)
+# Definimos una lista vacía para guardar los casos de prueba
+testcase = []
 
-# Imprimimos la matriz m actualizada
-print(m_actualizada)
+# Definimos una lista vacía para guardar las soluciones esperadas
+solution = []
 
+# Añadimos el caso de prueba con números negativos
+testcase.append([ [ 1, "=A1* -1" ] ])
+solution.append([ [ 1, -1 ] ])
+
+# Recorremos los casos de prueba y las soluciones
+for i in range(len(testcase)):
+    # Obtenemos el caso de prueba y la solución correspondiente
+    caso = testcase[i]
+    solucion = solution[i]
+    # Llamamos a la función evaluate para obtener el resultado del caso de prueba
+    resultado = evaluate(caso)
+    # Llamamos a la función validate para comprobar si el resultado es igual a la solución
+    valido = validate(resultado, solucion)
+    # Imprimimos el resultado de la validación
+    if valido:
+        print ("El caso de prueba {} es correcto.".format(i + 1))
+    else:
+        print ("El caso de prueba {} no es correcto.".format(i + 1))
 
 
 
